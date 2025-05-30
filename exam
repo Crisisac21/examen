@@ -1,0 +1,892 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.4
+-- Dumped by pg_dump version 17.4
+
+-- Started on 2025-05-28 06:35:21
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 6 (class 2615 OID 24666)
+-- Name: auditoria; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA auditoria;
+
+
+ALTER SCHEMA auditoria OWNER TO postgres;
+
+--
+-- TOC entry 236 (class 1255 OID 24677)
+-- Name: fn_log_audit(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.fn_log_audit() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF (TG_OP = 'DELETE') THEN
+    INSERT INTO auditoria.tb_auditoria (
+      tabla_aud, operacion_aud, valoranterior_aud, valornuevo_aud, fecha_aud, usuario_aud
+    )
+    VALUES (
+      TG_TABLE_NAME, 'D', row_to_json(OLD)::text, NULL, now(), current_user
+    );
+    RETURN OLD;
+
+  ELSIF (TG_OP = 'UPDATE') THEN
+    INSERT INTO auditoria.tb_auditoria (
+      tabla_aud, operacion_aud, valoranterior_aud, valornuevo_aud, fecha_aud, usuario_aud
+    )
+    VALUES (
+      TG_TABLE_NAME, 'U', row_to_json(OLD)::text, row_to_json(NEW)::text, now(), current_user
+    );
+    RETURN NEW;
+
+  ELSIF (TG_OP = 'INSERT') THEN
+    INSERT INTO auditoria.tb_auditoria (
+      tabla_aud, operacion_aud, valoranterior_aud, valornuevo_aud, fecha_aud, usuario_aud
+    )
+    VALUES (
+      TG_TABLE_NAME, 'I', NULL, row_to_json(NEW)::text, now(), current_user
+    );
+    RETURN NEW;
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_log_audit() OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 233 (class 1259 OID 24668)
+-- Name: tb_auditoria; Type: TABLE; Schema: auditoria; Owner: postgres
+--
+
+CREATE TABLE auditoria.tb_auditoria (
+    id_aud integer NOT NULL,
+    tabla_aud text,
+    operacion_aud text,
+    valoranterior_aud text,
+    valornuevo_aud text,
+    fecha_aud date,
+    usuario_aud text,
+    esquema_aud text,
+    activar_aud boolean,
+    trigger_aud boolean
+);
+
+
+ALTER TABLE auditoria.tb_auditoria OWNER TO postgres;
+
+--
+-- TOC entry 232 (class 1259 OID 24667)
+-- Name: tb_auditoria_id_aud_seq; Type: SEQUENCE; Schema: auditoria; Owner: postgres
+--
+
+CREATE SEQUENCE auditoria.tb_auditoria_id_aud_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE auditoria.tb_auditoria_id_aud_seq OWNER TO postgres;
+
+--
+-- TOC entry 4984 (class 0 OID 0)
+-- Dependencies: 232
+-- Name: tb_auditoria_id_aud_seq; Type: SEQUENCE OWNED BY; Schema: auditoria; Owner: postgres
+--
+
+ALTER SEQUENCE auditoria.tb_auditoria_id_aud_seq OWNED BY auditoria.tb_auditoria.id_aud;
+
+
+--
+-- TOC entry 219 (class 1259 OID 16389)
+-- Name: tb_categoria; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_categoria (
+    id_cat integer NOT NULL,
+    descripcion_cat text
+);
+
+
+ALTER TABLE public.tb_categoria OWNER TO postgres;
+
+--
+-- TOC entry 218 (class 1259 OID 16388)
+-- Name: tb_categoria_id_cat_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tb_categoria_id_cat_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tb_categoria_id_cat_seq OWNER TO postgres;
+
+--
+-- TOC entry 4985 (class 0 OID 0)
+-- Dependencies: 218
+-- Name: tb_categoria_id_cat_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tb_categoria_id_cat_seq OWNED BY public.tb_categoria.id_cat;
+
+
+--
+-- TOC entry 235 (class 1259 OID 24688)
+-- Name: tb_compras; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_compras (
+    id_compra integer NOT NULL,
+    id_usuario integer NOT NULL,
+    id_producto integer NOT NULL,
+    cantidad integer NOT NULL,
+    precio_total numeric(10,2) NOT NULL,
+    fecha_compra timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.tb_compras OWNER TO postgres;
+
+--
+-- TOC entry 234 (class 1259 OID 24687)
+-- Name: tb_compras_id_compra_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tb_compras_id_compra_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tb_compras_id_compra_seq OWNER TO postgres;
+
+--
+-- TOC entry 4986 (class 0 OID 0)
+-- Dependencies: 234
+-- Name: tb_compras_id_compra_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tb_compras_id_compra_seq OWNED BY public.tb_compras.id_compra;
+
+
+--
+-- TOC entry 222 (class 1259 OID 16653)
+-- Name: tb_estadocivil; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_estadocivil (
+    id_est integer NOT NULL,
+    descripcion_est text
+);
+
+
+ALTER TABLE public.tb_estadocivil OWNER TO postgres;
+
+--
+-- TOC entry 223 (class 1259 OID 16658)
+-- Name: tb_estadocivil_id_est_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tb_estadocivil_id_est_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tb_estadocivil_id_est_seq OWNER TO postgres;
+
+--
+-- TOC entry 4987 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: tb_estadocivil_id_est_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tb_estadocivil_id_est_seq OWNED BY public.tb_estadocivil.id_est;
+
+
+--
+-- TOC entry 224 (class 1259 OID 16659)
+-- Name: tb_pagina; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_pagina (
+    id_pag integer NOT NULL,
+    descripcion_pag text,
+    path_pag text
+);
+
+
+ALTER TABLE public.tb_pagina OWNER TO postgres;
+
+--
+-- TOC entry 225 (class 1259 OID 16664)
+-- Name: tb_parametros; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_parametros (
+    id_par integer NOT NULL,
+    descripcion_par text,
+    valor_par text
+);
+
+
+ALTER TABLE public.tb_parametros OWNER TO postgres;
+
+--
+-- TOC entry 226 (class 1259 OID 16669)
+-- Name: tb_perfil; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_perfil (
+    id_per integer NOT NULL,
+    descripcion_per text
+);
+
+
+ALTER TABLE public.tb_perfil OWNER TO postgres;
+
+--
+-- TOC entry 227 (class 1259 OID 16674)
+-- Name: tb_perfilpagina; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_perfilpagina (
+    id_perpag integer NOT NULL,
+    id_per integer,
+    id_pag integer
+);
+
+
+ALTER TABLE public.tb_perfilpagina OWNER TO postgres;
+
+--
+-- TOC entry 228 (class 1259 OID 16677)
+-- Name: tb_perfilpagina_id_perpag_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tb_perfilpagina_id_perpag_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tb_perfilpagina_id_perpag_seq OWNER TO postgres;
+
+--
+-- TOC entry 4988 (class 0 OID 0)
+-- Dependencies: 228
+-- Name: tb_perfilpagina_id_perpag_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tb_perfilpagina_id_perpag_seq OWNED BY public.tb_perfilpagina.id_perpag;
+
+
+--
+-- TOC entry 229 (class 1259 OID 16678)
+-- Name: tb_producto_id_pr_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tb_producto_id_pr_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tb_producto_id_pr_seq OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 16398)
+-- Name: tb_productos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_productos (
+    id_pr integer NOT NULL,
+    id_cat integer,
+    nombre_pr text,
+    cantidad_pr integer,
+    precio_pr double precision,
+    foto_pr bytea,
+    foto_url text
+);
+
+
+ALTER TABLE public.tb_productos OWNER TO postgres;
+
+--
+-- TOC entry 220 (class 1259 OID 16397)
+-- Name: tb_productos_id_pr_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tb_productos_id_pr_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tb_productos_id_pr_seq OWNER TO postgres;
+
+--
+-- TOC entry 4989 (class 0 OID 0)
+-- Dependencies: 220
+-- Name: tb_productos_id_pr_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tb_productos_id_pr_seq OWNED BY public.tb_productos.id_pr;
+
+
+--
+-- TOC entry 230 (class 1259 OID 16679)
+-- Name: tb_usuario; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tb_usuario (
+    id_us integer NOT NULL,
+    id_per integer,
+    id_est integer,
+    nombre_us text,
+    cedula_us text,
+    correo_us text,
+    clave_us text,
+    bloqueado boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE public.tb_usuario OWNER TO postgres;
+
+--
+-- TOC entry 231 (class 1259 OID 16684)
+-- Name: tb_usuario_id_us_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tb_usuario_id_us_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tb_usuario_id_us_seq OWNER TO postgres;
+
+--
+-- TOC entry 4990 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: tb_usuario_id_us_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tb_usuario_id_us_seq OWNED BY public.tb_usuario.id_us;
+
+
+--
+-- TOC entry 4793 (class 2604 OID 24671)
+-- Name: tb_auditoria id_aud; Type: DEFAULT; Schema: auditoria; Owner: postgres
+--
+
+ALTER TABLE ONLY auditoria.tb_auditoria ALTER COLUMN id_aud SET DEFAULT nextval('auditoria.tb_auditoria_id_aud_seq'::regclass);
+
+
+--
+-- TOC entry 4787 (class 2604 OID 16685)
+-- Name: tb_categoria id_cat; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_categoria ALTER COLUMN id_cat SET DEFAULT nextval('public.tb_categoria_id_cat_seq'::regclass);
+
+
+--
+-- TOC entry 4794 (class 2604 OID 24691)
+-- Name: tb_compras id_compra; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_compras ALTER COLUMN id_compra SET DEFAULT nextval('public.tb_compras_id_compra_seq'::regclass);
+
+
+--
+-- TOC entry 4789 (class 2604 OID 16686)
+-- Name: tb_estadocivil id_est; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_estadocivil ALTER COLUMN id_est SET DEFAULT nextval('public.tb_estadocivil_id_est_seq'::regclass);
+
+
+--
+-- TOC entry 4790 (class 2604 OID 16687)
+-- Name: tb_perfilpagina id_perpag; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_perfilpagina ALTER COLUMN id_perpag SET DEFAULT nextval('public.tb_perfilpagina_id_perpag_seq'::regclass);
+
+
+--
+-- TOC entry 4788 (class 2604 OID 16401)
+-- Name: tb_productos id_pr; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_productos ALTER COLUMN id_pr SET DEFAULT nextval('public.tb_productos_id_pr_seq'::regclass);
+
+
+--
+-- TOC entry 4791 (class 2604 OID 16688)
+-- Name: tb_usuario id_us; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_usuario ALTER COLUMN id_us SET DEFAULT nextval('public.tb_usuario_id_us_seq'::regclass);
+
+
+--
+-- TOC entry 4975 (class 0 OID 24668)
+-- Dependencies: 233
+-- Data for Name: tb_auditoria; Type: TABLE DATA; Schema: auditoria; Owner: postgres
+--
+
+INSERT INTO auditoria.tb_auditoria VALUES (1, 'tb_categoria', NULL, NULL, NULL, NULL, NULL, 'public', NULL, true);
+INSERT INTO auditoria.tb_auditoria VALUES (2, 'tb_productos', NULL, NULL, NULL, NULL, NULL, 'public', NULL, true);
+INSERT INTO auditoria.tb_auditoria VALUES (3, 'tb_parametros', NULL, NULL, NULL, NULL, NULL, 'public', NULL, false);
+INSERT INTO auditoria.tb_auditoria VALUES (4, 'tb_estadocivil', NULL, NULL, NULL, NULL, NULL, 'public', NULL, false);
+INSERT INTO auditoria.tb_auditoria VALUES (5, 'tb_pagina', NULL, NULL, NULL, NULL, NULL, 'public', NULL, false);
+INSERT INTO auditoria.tb_auditoria VALUES (6, 'tb_perfil', NULL, NULL, NULL, NULL, NULL, 'public', NULL, false);
+INSERT INTO auditoria.tb_auditoria VALUES (7, 'tb_perfilpagina', NULL, NULL, NULL, NULL, NULL, 'public', NULL, false);
+INSERT INTO auditoria.tb_auditoria VALUES (8, 'tb_usuario', NULL, NULL, NULL, NULL, NULL, 'public', NULL, false);
+INSERT INTO auditoria.tb_auditoria VALUES (9, 'tb_productos', 'U', '{"id_pr":6,"id_cat":3,"nombre_pr":"Agujas RL 3","cantidad_pr":100,"precio_pr":8.5,"foto_pr":null}', '{"id_pr":6,"id_cat":3,"nombre_pr":"Agujas RL 3","cantidad_pr":100,"precio_pr":10,"foto_pr":null}', '2025-05-20', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (10, 'tb_usuario', 'I', NULL, '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":null,"bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (11, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":null,"bloqueado":false}', '{"id_us":10,"id_per":null,"id_est":null,"nombre_us":"null","cedula_us":"null","correo_us":"null","clave_us":null,"bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (12, 'tb_usuario', 'U', '{"id_us":10,"id_per":null,"id_est":null,"nombre_us":"null","cedula_us":"null","correo_us":"null","clave_us":null,"bloqueado":false}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (13, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":false}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":true}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (14, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":true}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (15, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":false}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":true}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (16, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":true}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (17, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123456","bloqueado":false}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123","bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (18, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123","bloqueado":false}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123","bloqueado":true}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (19, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"chidalgo@gmail.com","clave_us":"c123","bloqueado":true}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":"c1234","bloqueado":true}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (20, 'tb_perfilpagina', 'I', NULL, '{"id_perpag":8,"id_per":3,"id_pag":6}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (21, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":35,"precio_pr":14.5,"foto_pr":null}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":35,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (22, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":35,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":100,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (23, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":100,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":90,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (24, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":90,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":89,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (25, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":89,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":87,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (26, 'tb_compras', 'I', NULL, '{"id_compra":1,"id_usuario":1,"id_producto":1,"cantidad":1,"precio_total":15.99,"fecha_compra":"2025-05-27T17:38:54.187028"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (27, 'tb_productos', 'U', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":100,"precio_pr":15.99,"foto_pr":"\\x6e756c6c"}', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (28, 'tb_productos', 'I', NULL, '{"id_pr":2,"id_cat":1,"nombre_pr":"Tinta Azul","cantidad_pr":10,"precio_pr":10,"foto_pr":null}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (29, 'tb_productos', 'I', NULL, '{"id_pr":3,"id_cat":1,"nombre_pr":"Tinta Azul","cantidad_pr":10,"precio_pr":10,"foto_pr":null}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (30, 'tb_productos', 'U', '{"id_pr":2,"id_cat":1,"nombre_pr":"Tinta Azul","cantidad_pr":10,"precio_pr":10,"foto_pr":null}', '{"id_pr":2,"id_cat":1,"nombre_pr":"Tinta Roja","cantidad_pr":10,"precio_pr":10,"foto_pr":null}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (31, 'tb_productos', 'D', '{"id_pr":2,"id_cat":1,"nombre_pr":"Tinta Roja","cantidad_pr":10,"precio_pr":10,"foto_pr":null}', NULL, '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (32, 'tb_usuario', 'U', '{"id_us":7,"id_per":3,"id_est":3,"nombre_us":"Billy Butcher","cedula_us":"1784032712","correo_us":"billy@gmail.com","clave_us":"billy","bloqueado":false}', '{"id_us":7,"id_per":3,"id_est":3,"nombre_us":"Billy Butcher","cedula_us":"1784032712","correo_us":"billy@gmail.com","clave_us":"billy1234","bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (33, 'tb_usuario', 'U', '{"id_us":7,"id_per":3,"id_est":3,"nombre_us":"Billy Butcher","cedula_us":"1784032712","correo_us":"billy@gmail.com","clave_us":"billy1234","bloqueado":false}', '{"id_us":7,"id_per":3,"id_est":3,"nombre_us":"Billy Butcher","cedula_us":"1784032712","correo_us":"billy@gmail.com","clave_us":"billy","bloqueado":false}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (34, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":87,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067","foto_url":null}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":87,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067","foto_url":"Imagenes/tinta_negra.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (35, 'tb_productos', 'U', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":null}', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":"Imagenes/tinta_negra.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (36, 'tb_productos', 'U', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":"Imagenes/tinta_negra.jpg"}', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":"Imagenes/tinta_blanca.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (37, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":87,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067","foto_url":"Imagenes/tinta_negra.jpg"}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":87,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067","foto_url":"Imagenes/tinta_blanca.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (38, 'tb_productos', 'U', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":"Imagenes/tinta_blanca.jpg"}', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":"Imagenes/tinta_negra.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (39, 'tb_productos', 'U', '{"id_pr":18,"id_cat":4,"nombre_pr":"Gel Calmante","cantidad_pr":22,"precio_pr":13.99,"foto_pr":null,"foto_url":null}', '{"id_pr":18,"id_cat":4,"nombre_pr":"Gel Calmante","cantidad_pr":22,"precio_pr":13.99,"foto_pr":null,"foto_url":"Imagenes/gel.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (40, 'tb_productos', 'U', '{"id_pr":4,"id_cat":2,"nombre_pr":"Maquina Rotativa","cantidad_pr":100,"precio_pr":200.99,"foto_pr":null,"foto_url":null}', '{"id_pr":4,"id_cat":2,"nombre_pr":"Maquina Rotativa","cantidad_pr":100,"precio_pr":200.99,"foto_pr":null,"foto_url":"Imagenes/maquina.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (41, 'tb_productos', 'U', '{"id_pr":9,"id_cat":4,"nombre_pr":"Crema Cicatrizante","cantidad_pr":25,"precio_pr":10.99,"foto_pr":null,"foto_url":null}', '{"id_pr":9,"id_cat":4,"nombre_pr":"Crema Cicatrizante","cantidad_pr":25,"precio_pr":10.99,"foto_pr":null,"foto_url":"Imagenes/crema.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (42, 'tb_productos', 'U', '{"id_pr":4,"id_cat":2,"nombre_pr":"Maquina Rotativa","cantidad_pr":100,"precio_pr":200.99,"foto_pr":null,"foto_url":"Imagenes/maquina.jpg"}', '{"id_pr":4,"id_cat":2,"nombre_pr":"Maquina Rotativa","cantidad_pr":100,"precio_pr":200.99,"foto_pr":null,"foto_url":"Imagenes/maquina2.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (43, 'tb_productos', 'U', '{"id_pr":5,"id_cat":2,"nombre_pr":"Maquina de Bobinas","cantidad_pr":150,"precio_pr":250,"foto_pr":null,"foto_url":null}', '{"id_pr":5,"id_cat":2,"nombre_pr":"Maquina de Bobinas","cantidad_pr":150,"precio_pr":250,"foto_pr":null,"foto_url":"Imagenes/maquina2.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (44, 'tb_productos', 'U', '{"id_pr":4,"id_cat":2,"nombre_pr":"Maquina Rotativa","cantidad_pr":100,"precio_pr":200.99,"foto_pr":null,"foto_url":"Imagenes/maquina2.png"}', '{"id_pr":4,"id_cat":2,"nombre_pr":"Maquina Rotativa","cantidad_pr":100,"precio_pr":200.99,"foto_pr":null,"foto_url":"Imagenes/maquina.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (45, 'tb_productos', 'U', '{"id_pr":15,"id_cat":1,"nombre_pr":"Tinta Verde","cantidad_pr":28,"precio_pr":16.75,"foto_pr":null,"foto_url":null}', '{"id_pr":15,"id_cat":1,"nombre_pr":"Tinta Verde","cantidad_pr":28,"precio_pr":16.75,"foto_pr":null,"foto_url":"Imagenes/Tinta_Verde.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (46, 'tb_productos', 'U', '{"id_pr":17,"id_cat":3,"nombre_pr":"Cartucho Magnum 11","cantidad_pr":50,"precio_pr":14.5,"foto_pr":null,"foto_url":null}', '{"id_pr":17,"id_cat":3,"nombre_pr":"Cartucho Magnum 11","cantidad_pr":50,"precio_pr":14.5,"foto_pr":null,"foto_url":"Imagenes/cartuchos.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (47, 'tb_productos', 'U', '{"id_pr":12,"id_cat":2,"nombre_pr":"Fuente de Poder","cantidad_pr":12,"precio_pr":180,"foto_pr":null,"foto_url":null}', '{"id_pr":12,"id_cat":2,"nombre_pr":"Fuente de Poder","cantidad_pr":12,"precio_pr":180,"foto_pr":null,"foto_url":"Imagenes/fuente.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (48, 'tb_productos', 'U', '{"id_pr":14,"id_cat":4,"nombre_pr":"Jabón Espumoso","cantidad_pr":30,"precio_pr":9.99,"foto_pr":null,"foto_url":null}', '{"id_pr":14,"id_cat":4,"nombre_pr":"Jabón Espumoso","cantidad_pr":30,"precio_pr":9.99,"foto_pr":null,"foto_url":"Imagenes/jabon.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (49, 'tb_productos', 'U', '{"id_pr":13,"id_cat":3,"nombre_pr":"Agujas RS 9","cantidad_pr":70,"precio_pr":11,"foto_pr":null,"foto_url":null}', '{"id_pr":13,"id_cat":3,"nombre_pr":"Agujas RS 9","cantidad_pr":70,"precio_pr":11,"foto_pr":null,"foto_url":"Imagenes/9R.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (50, 'tb_productos', 'U', '{"id_pr":16,"id_cat":2,"nombre_pr":"Pedal de Control","cantidad_pr":18,"precio_pr":25,"foto_pr":null,"foto_url":null}', '{"id_pr":16,"id_cat":2,"nombre_pr":"Pedal de Control","cantidad_pr":18,"precio_pr":25,"foto_pr":null,"foto_url":"Imagenes/Pedal.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (51, 'tb_productos', 'U', '{"id_pr":19,"id_cat":1,"nombre_pr":"Tinta Amarilla","cantidad_pr":32,"precio_pr":16,"foto_pr":null,"foto_url":null}', '{"id_pr":19,"id_cat":1,"nombre_pr":"Tinta Amarilla","cantidad_pr":32,"precio_pr":16,"foto_pr":null,"foto_url":"Imagenes/tinta_amarilla.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (52, 'tb_productos', 'U', '{"id_pr":10,"id_cat":4,"nombre_pr":"Loción Antibacteriana","cantidad_pr":20,"precio_pr":12.5,"foto_pr":null,"foto_url":null}', '{"id_pr":10,"id_cat":4,"nombre_pr":"Loción Antibacteriana","cantidad_pr":20,"precio_pr":12.5,"foto_pr":null,"foto_url":"Imagenes/Locion.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (53, 'tb_productos', 'U', '{"id_pr":8,"id_cat":3,"nombre_pr":"Cartucho Magnum 7","cantidad_pr":60,"precio_pr":12,"foto_pr":null,"foto_url":null}', '{"id_pr":8,"id_cat":3,"nombre_pr":"Cartucho Magnum 7","cantidad_pr":60,"precio_pr":12,"foto_pr":null,"foto_url":"Imagenes/Cartucho7.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (54, 'tb_productos', 'U', '{"id_pr":10,"id_cat":4,"nombre_pr":"Loción Antibacteriana","cantidad_pr":20,"precio_pr":12.5,"foto_pr":null,"foto_url":"Imagenes/Locion.png"}', '{"id_pr":10,"id_cat":4,"nombre_pr":"Loción Antibacteriana","cantidad_pr":20,"precio_pr":12.5,"foto_pr":null,"foto_url":"Imagenes/Loci%C3%B3n.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (55, 'tb_productos', 'U', '{"id_pr":6,"id_cat":3,"nombre_pr":"Agujas RL 3","cantidad_pr":100,"precio_pr":10,"foto_pr":null,"foto_url":null}', '{"id_pr":6,"id_cat":3,"nombre_pr":"Agujas RL 3","cantidad_pr":100,"precio_pr":10,"foto_pr":null,"foto_url":"Imagenes/Agujas3.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (56, 'tb_productos', 'U', '{"id_pr":7,"id_cat":3,"nombre_pr":"Agujas RL 5","cantidad_pr":80,"precio_pr":9.99,"foto_pr":null,"foto_url":null}', '{"id_pr":7,"id_cat":3,"nombre_pr":"Agujas RL 5","cantidad_pr":80,"precio_pr":9.99,"foto_pr":null,"foto_url":"Imagenes/Agujas5.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (57, 'tb_productos', 'U', '{"id_pr":3,"id_cat":1,"nombre_pr":"Tinta Azul","cantidad_pr":10,"precio_pr":10,"foto_pr":null,"foto_url":null}', '{"id_pr":3,"id_cat":1,"nombre_pr":"Tinta Azul","cantidad_pr":10,"precio_pr":10,"foto_pr":null,"foto_url":"Imagenes/TintaAzul.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (58, 'tb_productos', 'U', '{"id_pr":20,"id_cat":2,"nombre_pr":"Grip de Aluminio","cantidad_pr":14,"precio_pr":30,"foto_pr":null,"foto_url":null}', '{"id_pr":20,"id_cat":2,"nombre_pr":"Grip de Aluminio","cantidad_pr":14,"precio_pr":30,"foto_pr":null,"foto_url":"Imagenes/Grip.png"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (59, 'tb_productos', 'U', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":87,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067","foto_url":"Imagenes/tinta_blanca.jpg"}', '{"id_pr":11,"id_cat":1,"nombre_pr":"Tinta Blanca","cantidad_pr":100,"precio_pr":14.5,"foto_pr":"\\x696d6167656e65732f74696e74615f626c616e63612e6a7067","foto_url":"Imagenes/tinta_blanca.jpg"}', '2025-05-27', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (60, 'tb_compras', 'I', NULL, '{"id_compra":2,"id_usuario":1,"id_producto":19,"cantidad":2,"precio_total":32.00,"fecha_compra":"2025-05-28T06:06:13.624909"}', '2025-05-28', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (61, 'tb_productos', 'U', '{"id_pr":19,"id_cat":1,"nombre_pr":"Tinta Amarilla","cantidad_pr":32,"precio_pr":16,"foto_pr":null,"foto_url":"Imagenes/tinta_amarilla.png"}', '{"id_pr":19,"id_cat":1,"nombre_pr":"Tinta Amarilla","cantidad_pr":30,"precio_pr":16,"foto_pr":null,"foto_url":"Imagenes/tinta_amarilla.png"}', '2025-05-28', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (62, 'tb_compras', 'I', NULL, '{"id_compra":3,"id_usuario":1,"id_producto":1,"cantidad":1,"precio_total":15.99,"fecha_compra":"2025-05-28T06:07:06.684425"}', '2025-05-28', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (63, 'tb_productos', 'U', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":99,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":"Imagenes/tinta_negra.jpg"}', '{"id_pr":1,"id_cat":1,"nombre_pr":"Tinta Negra","cantidad_pr":98,"precio_pr":15.99,"foto_pr":"\\x6e756c6c","foto_url":"Imagenes/tinta_negra.jpg"}', '2025-05-28', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (64, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":"c1234","bloqueado":true}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":"c1234","bloqueado":false}', '2025-05-28', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (65, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":"c1234","bloqueado":false}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":"c1234","bloqueado":false}', '2025-05-28', 'postgres', NULL, NULL, NULL);
+INSERT INTO auditoria.tb_auditoria VALUES (66, 'tb_usuario', 'U', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":"c1234","bloqueado":false}', '{"id_us":10,"id_per":1,"id_est":2,"nombre_us":"Christian Hidalgo","cedula_us":"1207832366","correo_us":"hidalgo@gmail.com","clave_us":"cri123","bloqueado":false}', '2025-05-28', 'postgres', NULL, NULL, NULL);
+
+
+--
+-- TOC entry 4961 (class 0 OID 16389)
+-- Dependencies: 219
+-- Data for Name: tb_categoria; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_categoria VALUES (1, 'Tinta y pigmentos');
+INSERT INTO public.tb_categoria VALUES (2, 'Máquinas de tatuar');
+INSERT INTO public.tb_categoria VALUES (3, 'Agujas y cartuchos');
+INSERT INTO public.tb_categoria VALUES (4, 'Cuidados post-tatuaje');
+
+
+--
+-- TOC entry 4977 (class 0 OID 24688)
+-- Dependencies: 235
+-- Data for Name: tb_compras; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_compras VALUES (1, 1, 1, 1, 15.99, '2025-05-27 17:38:54.187028');
+INSERT INTO public.tb_compras VALUES (2, 1, 19, 2, 32.00, '2025-05-28 06:06:13.624909');
+INSERT INTO public.tb_compras VALUES (3, 1, 1, 1, 15.99, '2025-05-28 06:07:06.684425');
+
+
+--
+-- TOC entry 4964 (class 0 OID 16653)
+-- Dependencies: 222
+-- Data for Name: tb_estadocivil; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_estadocivil VALUES (1, 'casado');
+INSERT INTO public.tb_estadocivil VALUES (2, 'soltero');
+INSERT INTO public.tb_estadocivil VALUES (3, 'divorciado');
+
+
+--
+-- TOC entry 4966 (class 0 OID 16659)
+-- Dependencies: 224
+-- Data for Name: tb_pagina; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_pagina VALUES (1, 'Carrito compras', 'http://localhost:8082/site_002/carrito.jsp');
+INSERT INTO public.tb_pagina VALUES (2, 'Administrar usuarios', 'http://localhost:8082/site_002/usuarios.jsp');
+INSERT INTO public.tb_pagina VALUES (3, 'Administrar productos', 'http://localhost:8082/site_002/productos.jsp');
+INSERT INTO public.tb_pagina VALUES (4, 'Bitacora', 'http://localhost:8082/site_002/bitacora.jsp');
+INSERT INTO public.tb_pagina VALUES (6, 'Cambiar clave', 'http://localhost:8082/site_002/cambiarClave.jsp');
+INSERT INTO public.tb_pagina VALUES (5, 'Cerrar sesión', 'http://localhost:8082/site_002/cerrarsesion.jsp');
+
+
+--
+-- TOC entry 4967 (class 0 OID 16664)
+-- Dependencies: 225
+-- Data for Name: tb_parametros; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- TOC entry 4968 (class 0 OID 16669)
+-- Dependencies: 226
+-- Data for Name: tb_perfil; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_perfil VALUES (1, 'administrador');
+INSERT INTO public.tb_perfil VALUES (2, 'cliente');
+INSERT INTO public.tb_perfil VALUES (3, 'empleado');
+
+
+--
+-- TOC entry 4969 (class 0 OID 16674)
+-- Dependencies: 227
+-- Data for Name: tb_perfilpagina; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_perfilpagina VALUES (1, 1, 2);
+INSERT INTO public.tb_perfilpagina VALUES (2, 1, 4);
+INSERT INTO public.tb_perfilpagina VALUES (3, 1, 5);
+INSERT INTO public.tb_perfilpagina VALUES (4, 2, 1);
+INSERT INTO public.tb_perfilpagina VALUES (5, 2, 5);
+INSERT INTO public.tb_perfilpagina VALUES (6, 3, 3);
+INSERT INTO public.tb_perfilpagina VALUES (7, 3, 5);
+INSERT INTO public.tb_perfilpagina VALUES (8, 3, 6);
+
+
+--
+-- TOC entry 4963 (class 0 OID 16398)
+-- Dependencies: 221
+-- Data for Name: tb_productos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_productos VALUES (18, 4, 'Gel Calmante', 22, 13.99, NULL, 'Imagenes/gel.jpg');
+INSERT INTO public.tb_productos VALUES (9, 4, 'Crema Cicatrizante', 25, 10.99, NULL, 'Imagenes/crema.png');
+INSERT INTO public.tb_productos VALUES (5, 2, 'Maquina de Bobinas', 150, 250, NULL, 'Imagenes/maquina2.png');
+INSERT INTO public.tb_productos VALUES (4, 2, 'Maquina Rotativa', 100, 200.99, NULL, 'Imagenes/maquina.jpg');
+INSERT INTO public.tb_productos VALUES (15, 1, 'Tinta Verde', 28, 16.75, NULL, 'Imagenes/Tinta_Verde.png');
+INSERT INTO public.tb_productos VALUES (17, 3, 'Cartucho Magnum 11', 50, 14.5, NULL, 'Imagenes/cartuchos.jpg');
+INSERT INTO public.tb_productos VALUES (12, 2, 'Fuente de Poder', 12, 180, NULL, 'Imagenes/fuente.png');
+INSERT INTO public.tb_productos VALUES (14, 4, 'Jabón Espumoso', 30, 9.99, NULL, 'Imagenes/jabon.png');
+INSERT INTO public.tb_productos VALUES (13, 3, 'Agujas RS 9', 70, 11, NULL, 'Imagenes/9R.png');
+INSERT INTO public.tb_productos VALUES (16, 2, 'Pedal de Control', 18, 25, NULL, 'Imagenes/Pedal.png');
+INSERT INTO public.tb_productos VALUES (8, 3, 'Cartucho Magnum 7', 60, 12, NULL, 'Imagenes/Cartucho7.png');
+INSERT INTO public.tb_productos VALUES (10, 4, 'Loción Antibacteriana', 20, 12.5, NULL, 'Imagenes/Loci%C3%B3n.png');
+INSERT INTO public.tb_productos VALUES (6, 3, 'Agujas RL 3', 100, 10, NULL, 'Imagenes/Agujas3.png');
+INSERT INTO public.tb_productos VALUES (7, 3, 'Agujas RL 5', 80, 9.99, NULL, 'Imagenes/Agujas5.png');
+INSERT INTO public.tb_productos VALUES (3, 1, 'Tinta Azul', 10, 10, NULL, 'Imagenes/TintaAzul.png');
+INSERT INTO public.tb_productos VALUES (20, 2, 'Grip de Aluminio', 14, 30, NULL, 'Imagenes/Grip.png');
+INSERT INTO public.tb_productos VALUES (11, 1, 'Tinta Blanca', 100, 14.5, '\x696d6167656e65732f74696e74615f626c616e63612e6a7067', 'Imagenes/tinta_blanca.jpg');
+INSERT INTO public.tb_productos VALUES (19, 1, 'Tinta Amarilla', 30, 16, NULL, 'Imagenes/tinta_amarilla.png');
+INSERT INTO public.tb_productos VALUES (1, 1, 'Tinta Negra', 98, 15.99, '\x6e756c6c', 'Imagenes/tinta_negra.jpg');
+
+
+--
+-- TOC entry 4972 (class 0 OID 16679)
+-- Dependencies: 230
+-- Data for Name: tb_usuario; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tb_usuario VALUES (2, 2, 1, 'Queen Maeve', '1714032712', 'queen@gmail.com', 'queen', false);
+INSERT INTO public.tb_usuario VALUES (4, 1, 2, 'Soldier Boy', '1714032718', 'soldier@gmail.com', 'soldier', false);
+INSERT INTO public.tb_usuario VALUES (7, 3, 3, 'Billy Butcher', '1784032712', 'billy@gmail.com', 'billy', false);
+INSERT INTO public.tb_usuario VALUES (10, 1, 2, 'Christian Hidalgo', '1207832366', 'hidalgo@gmail.com', 'cri123', false);
+
+
+--
+-- TOC entry 4991 (class 0 OID 0)
+-- Dependencies: 232
+-- Name: tb_auditoria_id_aud_seq; Type: SEQUENCE SET; Schema: auditoria; Owner: postgres
+--
+
+SELECT pg_catalog.setval('auditoria.tb_auditoria_id_aud_seq', 66, true);
+
+
+--
+-- TOC entry 4992 (class 0 OID 0)
+-- Dependencies: 218
+-- Name: tb_categoria_id_cat_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.tb_categoria_id_cat_seq', 3, true);
+
+
+--
+-- TOC entry 4993 (class 0 OID 0)
+-- Dependencies: 234
+-- Name: tb_compras_id_compra_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.tb_compras_id_compra_seq', 3, true);
+
+
+--
+-- TOC entry 4994 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: tb_estadocivil_id_est_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.tb_estadocivil_id_est_seq', 3, true);
+
+
+--
+-- TOC entry 4995 (class 0 OID 0)
+-- Dependencies: 228
+-- Name: tb_perfilpagina_id_perpag_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.tb_perfilpagina_id_perpag_seq', 7, true);
+
+
+--
+-- TOC entry 4996 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: tb_producto_id_pr_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.tb_producto_id_pr_seq', 3, true);
+
+
+--
+-- TOC entry 4997 (class 0 OID 0)
+-- Dependencies: 220
+-- Name: tb_productos_id_pr_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.tb_productos_id_pr_seq', 3, true);
+
+
+--
+-- TOC entry 4998 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: tb_usuario_id_us_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.tb_usuario_id_us_seq', 10, true);
+
+
+--
+-- TOC entry 4802 (class 2606 OID 24675)
+-- Name: tb_auditoria tb_auditoria_pkey; Type: CONSTRAINT; Schema: auditoria; Owner: postgres
+--
+
+ALTER TABLE ONLY auditoria.tb_auditoria
+    ADD CONSTRAINT tb_auditoria_pkey PRIMARY KEY (id_aud);
+
+
+--
+-- TOC entry 4797 (class 2606 OID 16396)
+-- Name: tb_categoria id_cat; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_categoria
+    ADD CONSTRAINT id_cat PRIMARY KEY (id_cat);
+
+
+--
+-- TOC entry 4799 (class 2606 OID 16405)
+-- Name: tb_productos id_pr; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_productos
+    ADD CONSTRAINT id_pr PRIMARY KEY (id_pr);
+
+
+--
+-- TOC entry 4804 (class 2606 OID 24694)
+-- Name: tb_compras tb_compras_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_compras
+    ADD CONSTRAINT tb_compras_pkey PRIMARY KEY (id_compra);
+
+
+--
+-- TOC entry 4800 (class 1259 OID 24676)
+-- Name: tb_auditoria_pk; Type: INDEX; Schema: auditoria; Owner: postgres
+--
+
+CREATE UNIQUE INDEX tb_auditoria_pk ON auditoria.tb_auditoria USING btree (id_aud);
+
+
+--
+-- TOC entry 4806 (class 2620 OID 24678)
+-- Name: tb_categoria tb_categoria_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_categoria_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_categoria FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4814 (class 2620 OID 24695)
+-- Name: tb_compras tb_compras_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_compras_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_compras FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4808 (class 2620 OID 24681)
+-- Name: tb_estadocivil tb_estadocivil_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_estadocivil_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_estadocivil FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4809 (class 2620 OID 24682)
+-- Name: tb_pagina tb_pagina_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_pagina_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_pagina FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4810 (class 2620 OID 24680)
+-- Name: tb_parametros tb_parametros_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_parametros_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_parametros FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4811 (class 2620 OID 24683)
+-- Name: tb_perfil tb_perfil_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_perfil_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_perfil FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4812 (class 2620 OID 24684)
+-- Name: tb_perfilpagina tb_perfilpagina_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_perfilpagina_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_perfilpagina FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4807 (class 2620 OID 24679)
+-- Name: tb_productos tb_productos_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_productos_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_productos FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4813 (class 2620 OID 24685)
+-- Name: tb_usuario tb_usuario_tg_audit; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER tb_usuario_tg_audit AFTER INSERT OR DELETE OR UPDATE ON public.tb_usuario FOR EACH ROW EXECUTE FUNCTION public.fn_log_audit();
+
+
+--
+-- TOC entry 4805 (class 2606 OID 16406)
+-- Name: tb_productos id_cat; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tb_productos
+    ADD CONSTRAINT id_cat FOREIGN KEY (id_cat) REFERENCES public.tb_categoria(id_cat);
+
+
+--
+-- TOC entry 4983 (class 0 OID 0)
+-- Dependencies: 5
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+-- Completed on 2025-05-28 06:35:21
+
+--
+-- PostgreSQL database dump complete
+--
+
